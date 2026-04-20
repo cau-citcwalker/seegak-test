@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./benchmark-server
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"
+      - "50051:50051"
+    volumes:
+      - ./benchmark-server/h5ad:/app/h5ad
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  proxy:
+    build:
+      context: ./network-proxy
+      dockerfile: Dockerfile
+    ports:
+      - "5002:5002"
+    depends_on:
+      - backend
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: seegak-test/Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - backend
+      - proxy
+    restart: unless-stopped

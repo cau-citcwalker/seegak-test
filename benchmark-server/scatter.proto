@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package scatter;
+
+service ScatterService {
+  rpc GetScatter (ScatterRequest) returns (ScatterResponse);
+}
+
+message ScatterRequest {
+  int32 n = 1;
+}
+
+message ScatterResponse {
+  int32 n = 1;
+  repeated float x = 2 [packed = true];
+  repeated float y = 3 [packed = true];
+  repeated string labels = 4;
+  repeated string colors = 5;
+  repeated string clusters = 6;
+}

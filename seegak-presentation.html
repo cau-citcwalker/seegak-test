@@ -1,0 +1,2058 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seegak - High-Performance Biological Data Visualization</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* ============================================================
+   Design Tokens (K-MAP Design System)
+   ============================================================ */
+:root {
+  --background: #ffffff;
+  --foreground: #303030;
+  --card: #ffffff;
+  --card-foreground: #303030;
+  --primary: hsl(340, 83%, 53%);
+  --primary-light: hsl(340, 83%, 53%, 0.1);
+  --primary-border: hsl(340, 83%, 53%, 0.2);
+  --secondary: #f5f5f5;
+  --muted: #ababab;
+  --border: #e5e5e5;
+  --radius: 0.5rem;
+  --header-h: 52px;
+
+  --slate-900: #0f172a;
+  --slate-800: #1e293b;
+  --slate-400: #94a3b8;
+  --slate-300: #cbd5e1;
+  --slate-500: #64748b;
+  --zinc-900: #18181b;
+  --zinc-800: #27272a;
+  --zinc-700: #3f3f46;
+  --zinc-600: #52525b;
+  --zinc-400: #a1a1aa;
+}
+
+/* ============================================================
+   Global Reset
+   ============================================================ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", sans-serif;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--foreground);
+  background: var(--background);
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ============================================================
+   Header
+   ============================================================ */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  height: var(--header-h);
+  background: #09090b;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  border-bottom: 2px solid var(--primary);
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+}
+
+.header-logo .logo-icon {
+  width: 30px;
+  height: 30px;
+  background: var(--primary);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 100%;
+}
+
+.header-nav a {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 1rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--slate-400);
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.header-nav a:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.05);
+}
+
+.header-nav a.active {
+  color: #fff;
+  border-bottom-color: var(--primary);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.page-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--slate-400);
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+}
+
+.key-hint-header {
+  font-size: 0.65rem;
+  color: var(--slate-500);
+  opacity: 1;
+  transition: opacity 3s;
+}
+
+/* ============================================================
+   Slide System (tab-based, no scroll)
+   ============================================================ */
+.slide-container {
+  position: fixed;
+  top: var(--header-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 4rem;
+  opacity: 0;
+  transform: translateX(60px);
+  pointer-events: none;
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  overflow-y: auto;
+}
+
+.slide.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.slide.exit-left {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+.slide-inner {
+  max-width: 1100px;
+  width: 100%;
+}
+
+.slide-alt { background: var(--secondary); }
+
+.slide-dark {
+  background: var(--slate-900);
+  color: #fff;
+}
+
+/* ============================================================
+   Typography
+   ============================================================ */
+.section-header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.section-header h2 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+}
+
+.section-header p {
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero-slide {
+  background: var(--card);
+  background-image: radial-gradient(circle, #ddd 1.15px, transparent 1.15px);
+  background-size: 24px 24px;
+  animation: bg-drift 1.5s linear infinite;
+}
+
+@keyframes bg-drift {
+  from { background-position: 0 0; }
+  to { background-position: 24px 24px; }
+}
+
+.hero-content { text-align: center; }
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 9999px;
+  border: 1px solid var(--primary-border);
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(8px);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--primary);
+  margin-bottom: 1.5rem;
+}
+
+.hero-content h1 {
+  font-size: clamp(2.5rem, 5vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 1rem;
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--primary), #f97316);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-content p.subtitle {
+  font-size: 1.2rem;
+  color: var(--muted);
+  font-weight: 300;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+}
+
+.hero-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.hero-tags .label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.75rem;
+  background: var(--secondary);
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+/* ============================================================
+   Card Grid
+   ============================================================ */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.25rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+}
+
+.card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+.card p { color: var(--muted); font-size: 0.85rem; line-height: 1.5; }
+
+.card .mono {
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ============================================================
+   Chart Types Grid
+   ============================================================ */
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.6rem;
+}
+
+.chart-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.chart-preview {
+  background: var(--zinc-900);
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+}
+
+.chart-preview .glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(20px);
+  opacity: 0.3;
+}
+
+.chart-preview .icon-wrap {
+  width: 28px;
+  height: 28px;
+  background: var(--zinc-800);
+  border: 1px solid var(--zinc-700);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.chart-info { padding: 0.45rem 0.6rem; }
+.chart-info h4 { font-weight: 700; font-size: 0.75rem; margin-bottom: 0.1rem; }
+.chart-info p { font-size: 0.65rem; color: var(--muted); }
+
+.scatter-dots { position: absolute; inset: 0; }
+.scatter-dots .dot {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  opacity: 0.7;
+}
+
+/* ============================================================
+   Pipeline
+   ============================================================ */
+.pipeline {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  justify-content: center;
+}
+
+.pipeline-step {
+  flex: 1;
+  max-width: 200px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pipeline-step + .pipeline-step { margin-left: -1px; }
+
+.pipeline-step .step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.pipeline-step h4 { font-size: 0.8rem; font-weight: 700; margin-bottom: 0.3rem; }
+.pipeline-step p { font-size: 0.7rem; color: var(--muted); line-height: 1.4; }
+
+.pipeline-arrow {
+  display: flex;
+  align-items: center;
+  font-size: 1.3rem;
+  color: var(--primary);
+  padding: 0 0.15rem;
+  font-weight: 300;
+}
+
+/* ============================================================
+   Code Block
+   ============================================================ */
+.code-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.code-block {
+  background: #1e1e2e;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.code-block-header {
+  background: rgba(255,255,255,0.05);
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.code-block-header .dot { width: 10px; height: 10px; border-radius: 50%; }
+.code-block-header .dot.r { background: #ff5f57; }
+.code-block-header .dot.y { background: #febc2e; }
+.code-block-header .dot.g { background: #28c840; }
+.code-block-header span {
+  font-size: 0.7rem;
+  color: var(--zinc-400);
+  margin-left: 0.5rem;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+}
+
+.code-block pre {
+  padding: 1rem;
+  overflow-x: auto;
+  font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  font-size: 0.78rem;
+  line-height: 1.65;
+  color: #cdd6f4;
+}
+
+.code-block pre .kw { color: #cba6f7; }
+.code-block pre .fn { color: #89b4fa; }
+.code-block pre .str { color: #a6e3a1; }
+.code-block pre .num { color: #fab387; }
+.code-block pre .cmt { color: #6c7086; font-style: italic; }
+.code-block pre .type { color: #f9e2af; }
+.code-block pre .tag { color: #89dceb; }
+.code-block pre .attr { color: #f38ba8; }
+
+.code-desc h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.6rem; }
+.code-desc p { color: var(--muted); font-size: 0.9rem; line-height: 1.6; margin-bottom: 0.75rem; }
+.code-desc ul { list-style: none; padding: 0; }
+.code-desc ul li {
+  position: relative;
+  padding-left: 1.25rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.code-desc ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--primary);
+  opacity: 0.6;
+}
+
+/* ============================================================
+   Feature Grid
+   ============================================================ */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.feature-item {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+  background: var(--card);
+  border: 1px solid var(--border);
+}
+
+.feature-item .f-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  background: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.feature-item h4 { font-size: 0.85rem; font-weight: 700; margin-bottom: 0.15rem; }
+.feature-item p { font-size: 0.75rem; color: var(--muted); line-height: 1.4; }
+
+/* ============================================================
+   Performance Comparison
+   ============================================================ */
+.compare-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1.5rem;
+}
+
+.compare-card {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.compare-card .compare-header {
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.compare-card.seegak .compare-header { background: var(--primary-light); color: var(--primary); }
+.compare-card.vitessce .compare-header { background: #dbeafe; color: #2563eb; }
+.compare-card.plotly .compare-header { background: var(--secondary); }
+
+.compare-card .compare-body { padding: 1rem; }
+
+.compare-card .stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+
+.compare-card .stat-row:last-child { border-bottom: none; }
+.compare-card .stat-row .val { font-weight: 700; }
+.compare-card.seegak .stat-row .val { color: var(--primary); }
+.compare-card.vitessce .stat-row .val { color: #2563eb; }
+
+.perf-visual { margin-top: 2rem; }
+
+.perf-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.perf-label {
+  width: 120px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.perf-bars { flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
+
+.perf-bar-item { display: flex; align-items: center; gap: 0.5rem; }
+
+.perf-bar-fill {
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+  min-width: 60px;
+  transition: width 0.8s ease-out;
+}
+
+.perf-bar-fill.seegak { background: var(--primary); }
+.perf-bar-fill.vitessce { background: #3b82f6; }
+.perf-bar-fill.plotly { background: #94a3b8; }
+
+/* ============================================================
+   Optimizations
+   ============================================================ */
+.opt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.opt-card {
+  padding: 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.opt-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.opt-badge.gpu { background: var(--primary-light); color: var(--primary); }
+.opt-badge.cpu { background: #dbeafe; color: #2563eb; }
+.opt-badge.react { background: var(--secondary); color: var(--zinc-600); }
+
+.opt-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+.opt-card p { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
+
+/* ============================================================
+   Footer slide
+   ============================================================ */
+.footer-slide { background: var(--slate-900); color: var(--slate-300); }
+
+.footer-content { text-align: center; }
+
+.footer-content .footer-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 2rem;
+  color: #fff;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.footer-content .footer-logo .logo-sq {
+  width: 40px;
+  height: 40px;
+  background: var(--primary);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.2rem;
+}
+
+.footer-content p {
+  color: var(--slate-400);
+  max-width: 500px;
+  margin: 0 auto 2rem;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.footer-bottom-text {
+  font-size: 0.75rem;
+  color: var(--slate-500);
+  margin-top: 2rem;
+}
+
+/* ============================================================
+   Benchmark Table
+   ============================================================ */
+.bench-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.bench-table th {
+  background: var(--secondary);
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.bench-table td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.bench-table tr:last-child td { border-bottom: none; }
+
+.bench-table tr.winner { background: var(--primary-light); }
+.bench-table tr.winner td { font-weight: 600; }
+
+.bench-table .val-ms { font-weight: 700; font-family: "SF Mono", "Fira Code", monospace; font-size: 0.75rem; }
+.bench-table .val-best { color: var(--primary); }
+
+.bench-table .proto-badge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  margin-right: 0.3rem;
+  min-width: 22px;
+  text-align: center;
+}
+
+/* Benchmark ranking bars */
+.rank-bars { margin-top: 1.5rem; }
+
+.rank-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.rank-label {
+  width: 110px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.rank-bar {
+  height: 22px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  padding: 0 0.6rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  transition: width 0.8s ease-out;
+  white-space: nowrap;
+}
+
+.rank-num {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--muted);
+  min-width: 50px;
+}
+
+/* Insight cards */
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+.insight-card {
+  padding: 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.insight-card h4 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.insight-card p {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.insight-card .highlight-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+.method-tag {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--secondary);
+  color: var(--zinc-600);
+  margin-right: 0.25rem;
+}
+
+.footer-tags {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.footer-tag {
+  padding: 0.35rem 0.75rem;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     HEADER
+     ============================================================ -->
+<header class="header">
+  <div class="header-logo" onclick="goSlide(0)">
+    <div class="logo-icon">K</div>
+    KMAP
+  </div>
+  <nav class="header-nav" id="headerNav">
+    <a data-slide="0">Home</a>
+    <a data-slide="1">Overview</a>
+    <a data-slide="2">Architecture</a>
+    <a data-slide="3">Pipeline</a>
+    <a data-slide="4">Charts</a>
+    <a data-slide="5">New Packages</a>
+    <a data-slide="6">Usage</a>
+    <a data-slide="7">Features</a>
+    <a data-slide="8">Performance</a>
+    <a data-slide="9">Optimization</a>
+    <a data-slide="10">Protocol Bench</a>
+    <a data-slide="11">Results</a>
+    <a data-slide="12">Insights</a>
+    <a data-slide="13">Network Sim</a>
+    <a data-slide="14">Sim Results</a>
+    <a data-slide="15">Conclusion</a>
+    <a data-slide="16">About</a>
+  </nav>
+  <div class="header-right">
+    <span class="page-badge" id="pageBadge">1 / 10</span>
+    <span class="key-hint-header" id="keyHint">&larr; &rarr; Arrow keys</span>
+  </div>
+</header>
+
+<!-- ============================================================
+     SLIDES CONTAINER
+     ============================================================ -->
+<div class="slide-container">
+
+  <!-- SLIDE 0: HERO -->
+  <section class="slide hero-slide active" data-idx="0">
+    <div class="slide-inner">
+      <div class="hero-content">
+        <div class="hero-badge">WebGL2 Accelerated &middot; Open Source</div>
+        <h1>
+          High-Performance<br>
+          <span class="gradient-text">Biological Data Visualization</span>
+        </h1>
+        <p class="subtitle">
+          수십만 개의 세포 데이터를 실시간으로 렌더링하는 WebGL2 기반 시각화 라이브러리.<br>
+          React 통합, Worker 기반 비동기 처리, GPU 가속 렌더링.
+        </p>
+        <div class="hero-tags">
+          <span class="label">Built for:</span>
+          <span class="tag">&#x1F9EC; scRNA-seq</span>
+          <span class="tag">&#x1F52C; UMAP / tSNE</span>
+          <span class="tag">&#x1F9EA; Gene Expression</span>
+          <span class="tag">&#x1F4CA; Multi-omics</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 1: WHAT IS SEEGAK -->
+  <section class="slide" data-idx="1">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>Seegak이란?</h2>
+        <p>Seegak(시각)은 대규모 생물학 데이터셋의 인터랙티브 시각화를 위해 설계된 고성능 TypeScript 라이브러리입니다.</p>
+      </div>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-icon">&#x26A1;</div>
+          <h3>GPU 가속 렌더링</h3>
+          <p>WebGL2 기반으로 100만+ 데이터 포인트를 60 FPS로 렌더링합니다. 셰이더에서 직접 컬러 팔레트 텍스처를 샘플링하여 CPU 병목을 제거합니다.</p>
+          <div class="mono">WebGL2 &middot; GLSL ES 3.0 &middot; Palette Texture</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F9F5;</div>
+          <h3>Worker 기반 비동기 처리</h3>
+          <p>다운샘플링, 클러스터링, 통계 계산을 Web Worker에서 처리하여 메인 스레드 블로킹 없이 대규모 데이터를 다룹니다.</p>
+          <div class="mono">Reservoir Sampling &middot; Grid Clustering &middot; Transferable</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x269B;</div>
+          <h3>React 네이티브 통합</h3>
+          <p>React 18 컴포넌트로 래핑되어 선언적 API로 사용 가능합니다. useRef로 인스턴스에 직접 접근하여 명령형 업데이트도 지원합니다.</p>
+          <div class="mono">forwardRef &middot; useImperativeHandle &middot; React 18</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2: ARCHITECTURE -->
+  <section class="slide slide-alt" data-idx="2">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>패키지 구조</h2>
+        <p>모노레포 아키텍처로 10개의 패키지가 계층적으로 구성되어 있습니다.</p>
+      </div>
+      <div class="card-grid" style="grid-template-columns: repeat(2, 1fr);">
+        <div class="card">
+          <div class="card-icon">&#x1F3D7;</div>
+          <h3>@seegak/core</h3>
+          <p>WebGL2 렌더 엔진, 셰이더 관리, 버퍼/텍스처 매니저, 인터랙션 핸들러, 좌표 변환, 공간 인덱스 등 저수준 인프라.</p>
+          <div class="mono">RenderEngine &middot; ShaderProgram &middot; BufferManager &middot; SpatialIndex</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F4C8;</div>
+          <h3>@seegak/bio-charts</h3>
+          <p>생물학 데이터에 특화된 차트 구현체. Scatter, Heatmap, BoxPlot, Violin, DotPlot, Bar, Pie, FeaturePlot 등 8종.</p>
+          <div class="mono">ScatterChart &middot; HeatmapChart &middot; ViolinPlotChart &middot; ...</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x269B;</div>
+          <h3>@seegak/react</h3>
+          <p>React 18 바인딩 레이어. 각 차트를 &lt;ScatterChart /&gt; 같은 선언적 컴포넌트로 제공하며, ref를 통한 명령형 접근도 지원.</p>
+          <div class="mono">&lt;ScatterChart /&gt; &middot; &lt;HeatmapChart /&gt; &middot; ...</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F9CD;</div>
+          <h3>@seegak/human-body-map</h3>
+          <p>SVG 기반 인체 해부학 시각화. 장기별 데이터 매핑, 호버/클릭 이벤트, 데이터 연동을 제공합니다.</p>
+          <div class="mono">HumanBodyMap &middot; 30+ Organ Paths &middot; SVG Interactive</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F9EC;</div>
+          <h3>@seegak/genomics <span style="font-size:0.65rem;background:hsl(340,83%,53%,0.15);color:hsl(340,83%,53%);padding:2px 6px;border-radius:4px;vertical-align:middle;">신규</span></h3>
+          <p>유전체 분석 특화 차트. Volcano Plot, Enrichment Plot (GSEA), Genomic Profile 트랙 시각화.</p>
+          <div class="mono">VolcanoPlotChart &middot; EnrichmentPlotChart &middot; GenomicProfileChart</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F5FA;</div>
+          <h3>@seegak/spatial <span style="font-size:0.65rem;background:hsl(340,83%,53%,0.15);color:hsl(340,83%,53%);padding:2px 6px;border-radius:4px;vertical-align:middle;">신규</span></h3>
+          <p>공간 전사체학(Spatial Transcriptomics) 시각화. 조직 이미지 오버레이, OME-ZARR/TIFF 멀티플렉스 이미징.</p>
+          <div class="mono">SpatialView &middot; MultiplexImage &middot; OME-ZARR</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F52C;</div>
+          <h3>@seegak/analysis <span style="font-size:0.65rem;background:hsl(340,83%,53%,0.15);color:hsl(340,83%,53%);padding:2px 6px;border-radius:4px;vertical-align:middle;">신규</span></h3>
+          <p>고급 분석 도구. FACS 방식 세포 게이팅, 세포 집합 트리 관리, 비교 뷰, 세포 유형 할당 워크플로우.</p>
+          <div class="mono">GatingPlot &middot; ObsSetTree &middot; ComparativeViewController</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F4E6;</div>
+          <h3>@seegak/3d &middot; @seegak/coordination &middot; @seegak/data-loaders <span style="font-size:0.65rem;background:hsl(340,83%,53%,0.15);color:hsl(340,83%,53%);padding:2px 6px;border-radius:4px;vertical-align:middle;">신규</span></h3>
+          <p>3D 부피/메시 렌더링(Ray Marching, Phong), 멀티뷰 좌표 연동(CoordinationSpace), 비동기 데이터 로더(Worker 기반).</p>
+          <div class="mono">VolumeView &middot; MeshView &middot; CoordinationSpace &middot; LoaderWorker</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: RENDERING PIPELINE -->
+  <section class="slide" data-idx="3">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>렌더링 파이프라인</h2>
+        <p>데이터 입력부터 화면 출력까지의 처리 흐름</p>
+      </div>
+      <div class="pipeline">
+        <div class="pipeline-step">
+          <div class="step-num">1</div>
+          <h4>Data Input</h4>
+          <p>Float32Array x, y 좌표 + 클러스터 라벨/컬러/수치값 수신</p>
+        </div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">
+          <div class="step-num">2</div>
+          <h4>Worker Processing</h4>
+          <p>다운샘플링, 정규화, 통계 계산을 Web Worker에서 비동기 수행</p>
+        </div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">
+          <div class="step-num">3</div>
+          <h4>GPU Upload</h4>
+          <p>x, y 분리 버퍼 + Uint16 인덱스 + 256x1 팔레트 텍스처 업로드</p>
+        </div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">
+          <div class="step-num">4</div>
+          <h4>Shader Render</h4>
+          <p>GLSL ES 3.0 셰이더가 팔레트 텍스처에서 색상 샘플링 후 렌더링</p>
+        </div>
+        <div class="pipeline-arrow">&rarr;</div>
+        <div class="pipeline-step">
+          <div class="step-num">5</div>
+          <h4>Interaction</h4>
+          <p>SpatialIndex O(1) 히트 테스트, 툴팁, 박스/라소 셀렉션</p>
+        </div>
+      </div>
+      <div style="margin-top: 2rem;">
+        <div class="code-section">
+          <div class="code-block">
+            <div class="code-block-header">
+              <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+              <span>scatter.vert (GLSL ES 3.0)</span>
+            </div>
+            <pre>
+<span class="kw">layout</span>(location = <span class="num">0</span>) <span class="kw">in</span> <span class="type">float</span> a_x;
+<span class="kw">layout</span>(location = <span class="num">1</span>) <span class="kw">in</span> <span class="type">float</span> a_y;
+<span class="kw">layout</span>(location = <span class="num">2</span>) <span class="kw">in</span> <span class="type">float</span> a_colorData;
+
+<span class="kw">uniform</span> <span class="type">mat4</span> u_projection;
+<span class="kw">uniform</span> <span class="type">float</span> u_pointSize;
+
+<span class="kw">void</span> <span class="fn">main</span>() {
+  gl_Position = u_projection * <span class="type">vec4</span>(a_x, a_y, <span class="num">0.0</span>, <span class="num">1.0</span>);
+  gl_PointSize = u_pointSize;
+  v_colorData = a_colorData;
+}</pre>
+          </div>
+          <div class="code-desc">
+            <h3>좌표 변환 시스템</h3>
+            <p>3단계 좌표 변환을 통해 데이터 좌표가 화면에 매핑됩니다.</p>
+            <ul>
+              <li><strong>Screen &rarr; World</strong>: 마우스 좌표를 데이터 공간으로 변환</li>
+              <li><strong>World &rarr; NDC</strong>: 카메라 매트릭스로 정규화 장치 좌표 변환</li>
+              <li><strong>Separate Buffers</strong>: x, y를 분리 버퍼로 업로드 (인터리브 제거)</li>
+              <li><strong>Palette Texture</strong>: 256x1 RGBA32F 텍스처에서 색상 룩업</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4: CHART TYPES -->
+  <section class="slide slide-alt" data-idx="4">
+    <div class="slide-inner">
+      <div class="section-header" style="margin-bottom:1rem;">
+        <h2 style="font-size:1.7rem;">지원 차트 타입</h2>
+        <p style="font-size:0.9rem;">싱글셀 · 유전체 · 공간전사체 · 3D 시각화에 최적화된 차트 컴포넌트</p>
+      </div>
+
+      <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.3rem;">싱글셀 분석 (Single-Cell Analysis)</div>
+      <div class="chart-grid" style="margin-bottom:0.7rem;">
+        <div class="chart-card">
+          <div class="chart-preview">
+            <div class="glow" style="width:60px;height:60px;background:#3b82f6;top:10px;left:15px;"></div>
+            <div class="glow" style="width:80px;height:80px;background:hsl(340,83%,53%);bottom:5px;right:5px;"></div>
+            <div class="scatter-dots">
+              <div class="dot" style="top:25%;left:30%;background:#60a5fa;"></div>
+              <div class="dot" style="top:35%;left:35%;background:#60a5fa;"></div>
+              <div class="dot" style="top:60%;right:25%;background:#f472b6;"></div>
+              <div class="dot" style="top:55%;right:30%;background:#f472b6;"></div>
+              <div class="dot" style="top:40%;left:50%;background:#34d399;"></div>
+            </div>
+            <div class="icon-wrap">&#x1F4CD;</div>
+          </div>
+          <div class="chart-info"><h4>ScatterChart</h4><p>UMAP, tSNE, PCA. 100만+ 포인트.</p></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-preview">
+            <div class="glow" style="width:100px;height:60px;background:#8b5cf6;top:15px;left:20px;"></div>
+            <div class="icon-wrap">&#x1F525;</div>
+          </div>
+          <div class="chart-info"><h4>HeatmapChart</h4><p>유전자 발현 매트릭스. 클러스터 바.</p></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-preview">
+            <div class="glow" style="width:70px;height:70px;background:#06b6d4;top:10px;right:15px;"></div>
+            <div class="icon-wrap">&#x1F4E6;</div>
+          </div>
+          <div class="chart-info"><h4>BoxPlotChart</h4><p>분포 비교. IQR, 이상치 감지.</p></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-preview">
+            <div class="glow" style="width:80px;height:50px;background:#a855f7;bottom:5px;left:15px;"></div>
+            <div class="icon-wrap">&#x1F3BB;</div>
+          </div>
+          <div class="chart-info"><h4>ViolinPlotChart</h4><p>KDE 확률 밀도. 박스 오버레이.</p></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-preview">
+            <div class="glow" style="width:60px;height:60px;background:#f59e0b;top:15px;left:30px;"></div>
+            <div class="icon-wrap">&#x25CF;</div>
+          </div>
+          <div class="chart-info"><h4>DotPlotChart</h4><p>발현량 + 발현 비율 동시 표현.</p></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-preview">
+            <div class="glow" style="width:80px;height:80px;background:#10b981;top:5px;right:5px;"></div>
+            <div class="icon-wrap">&#x1F9EC;</div>
+          </div>
+          <div class="chart-info"><h4>FeaturePlotChart</h4><p>연속 컬러 스케일. UMAP 위 표시.</p></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-preview">
+            <div class="glow" style="width:60px;height:40px;background:#ef4444;bottom:15px;right:20px;"></div>
+            <div class="icon-wrap">&#x1F4CA;</div>
+          </div>
+          <div class="chart-info"><h4>BarChart</h4><p>단순/스택. 가로/세로 방향.</p></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-preview">
+            <div class="glow" style="width:60px;height:60px;background:#ec4899;top:15px;left:20px;"></div>
+            <div class="icon-wrap">&#x1F967;</div>
+          </div>
+          <div class="chart-info"><h4>PieChart</h4><p>Pie/Donut. 퍼센트 레이블.</p></div>
+        </div>
+        <div class="chart-card" style="border-color:hsl(340,83%,53%,0.35);">
+          <div class="chart-preview">
+            <div class="glow" style="width:70px;height:50px;background:#ef4444;top:10px;left:10px;"></div>
+            <div class="glow" style="width:50px;height:50px;background:#3b82f6;bottom:5px;right:10px;"></div>
+            <div class="icon-wrap">&#x1F30B;</div>
+          </div>
+          <div class="chart-info"><h4>VolcanoPlot <span style="font-size:0.6rem;color:hsl(340,83%,53%);">신규</span></h4><p>차별 발현 유전자 시각화. log2FC / -log10p.</p></div>
+        </div>
+        <div class="chart-card" style="border-color:hsl(340,83%,53%,0.35);">
+          <div class="chart-preview">
+            <div class="glow" style="width:90px;height:40px;background:#10b981;top:15px;left:10px;"></div>
+            <div class="icon-wrap">&#x1F4C9;</div>
+          </div>
+          <div class="chart-info"><h4>EnrichmentPlot <span style="font-size:0.6rem;color:hsl(340,83%,53%);">신규</span></h4><p>GSEA 유전자 세트 강화 분석. Running score.</p></div>
+        </div>
+        <div class="chart-card" style="border-color:hsl(340,83%,53%,0.35);">
+          <div class="chart-preview">
+            <div class="glow" style="width:80px;height:60px;background:#f59e0b;top:5px;right:5px;"></div>
+            <div class="icon-wrap">&#x1F9EA;</div>
+          </div>
+          <div class="chart-info"><h4>GatingPlot <span style="font-size:0.6rem;color:hsl(340,83%,53%);">신규</span></h4><p>FACS 방식 세포 게이팅. 라소 드로우 &rarr; 게이트.</p></div>
+        </div>
+      </div>
+
+      <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.3rem;">공간·유전체·3D</div>
+      <div class="chart-grid">
+        <div class="chart-card" style="border-color:hsl(340,83%,53%,0.35);">
+          <div class="chart-preview">
+            <div class="glow" style="width:80px;height:80px;background:#06b6d4;top:0;left:10px;"></div>
+            <div class="icon-wrap">&#x1F5FA;</div>
+          </div>
+          <div class="chart-info"><h4>SpatialView <span style="font-size:0.6rem;color:hsl(340,83%,53%);">신규</span></h4><p>조직 이미지 기반 세포 시각화.</p></div>
+        </div>
+        <div class="chart-card" style="border-color:hsl(340,83%,53%,0.35);">
+          <div class="chart-preview">
+            <div class="glow" style="width:70px;height:50px;background:#8b5cf6;bottom:5px;left:15px;"></div>
+            <div class="icon-wrap">&#x1F52C;</div>
+          </div>
+          <div class="chart-info"><h4>MultiplexImage <span style="font-size:0.6rem;color:hsl(340,83%,53%);">신규</span></h4><p>OME-ZARR/TIFF 채널별 이미징.</p></div>
+        </div>
+        <div class="chart-card" style="border-color:hsl(340,83%,53%,0.35);">
+          <div class="chart-preview">
+            <div class="glow" style="width:60px;height:60px;background:#a855f7;top:5px;right:10px;"></div>
+            <div class="icon-wrap">&#x1F4C8;</div>
+          </div>
+          <div class="chart-info"><h4>GenomicProfile <span style="font-size:0.6rem;color:hsl(340,83%,53%);">신규</span></h4><p>게놈 트랙 시각화. 유전자 어노테이션.</p></div>
+        </div>
+        <div class="chart-card" style="border-color:hsl(140,70%,45%,0.35);">
+          <div class="chart-preview">
+            <div class="glow" style="width:70px;height:70px;background:#3b82f6;top:5px;left:10px;"></div>
+            <div class="glow" style="width:50px;height:50px;background:#f472b6;bottom:5px;right:10px;"></div>
+            <div class="icon-wrap" style="font-size:1.4rem;">&#x1F4CD;</div>
+          </div>
+          <div class="chart-info"><h4>Scatter3DView <span style="font-size:0.6rem;color:hsl(140,70%,45%);">v3</span></h4><p>3D UMAP/tSNE. 아크볼 카메라. 2D↔3D 토글.</p></div>
+        </div>
+        <div class="chart-card" style="border-color:hsl(340,83%,53%,0.35);">
+          <div class="chart-preview">
+            <div class="glow" style="width:80px;height:80px;background:#3b82f6;top:5px;left:10px;"></div>
+            <div class="icon-wrap">&#x1F4E6;</div>
+          </div>
+          <div class="chart-info"><h4>VolumeView <span style="font-size:0.6rem;color:hsl(340,83%,53%);">신규</span></h4><p>3D 부피 렌더링. MIP / X-Ray / ISO.</p></div>
+        </div>
+        <div class="chart-card" style="border-color:hsl(340,83%,53%,0.35);">
+          <div class="chart-preview">
+            <div class="glow" style="width:70px;height:70px;background:#10b981;bottom:5px;right:5px;"></div>
+            <div class="icon-wrap">&#x1F4CD;</div>
+          </div>
+          <div class="chart-info"><h4>MeshView <span style="font-size:0.6rem;color:hsl(340,83%,53%);">신규</span></h4><p>3D 메시 렌더링. Phong 조명.</p></div>
+        </div>
+        <div class="chart-card" style="border-color:hsl(340,83%,53%,0.35);">
+          <div class="chart-preview">
+            <div class="glow" style="width:90px;height:40px;background:#f59e0b;top:10px;left:5px;"></div>
+            <div class="icon-wrap">&#x1F4CA;</div>
+          </div>
+          <div class="chart-info"><h4>ComparativeView <span style="font-size:0.6rem;color:hsl(340,83%,53%);">신규</span></h4><p>두 그룹 나란히 비교 분석.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4b: NEW PACKAGES -->
+  <section class="slide" data-idx="5">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>신규 패키지</h2>
+        <p>Seegak v2에서 추가된 6개의 전문 패키지</p>
+      </div>
+      <div class="card-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="card">
+          <div class="card-icon">&#x1F9EC;</div>
+          <h3>@seegak/genomics</h3>
+          <p>차별 발현 분석(Volcano Plot), GSEA 강화 분석(Enrichment Plot), 게놈 트랙 프로파일 시각화.</p>
+          <div class="mono">VolcanoPlotChart &middot; EnrichmentPlotChart &middot; GenomicProfileChart</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F5FA;</div>
+          <h3>@seegak/spatial</h3>
+          <p>공간 전사체학 전용 시각화. 조직 H&amp;E 이미지 오버레이, OME-ZARR/TIFF 멀티채널 이미징 지원.</p>
+          <div class="mono">SpatialView &middot; MultiplexImageView</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F52C;</div>
+          <h3>@seegak/analysis</h3>
+          <p>FACS 방식 세포 게이팅(라소 드로우), 세포 집합 계층 트리, 비교 뷰 컨트롤러, 세포 유형 할당 워크플로우.</p>
+          <div class="mono">GatingPlot &middot; ObsSetTree &middot; ComparativeViewController &middot; CellAssignmentManager</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F4E6;</div>
+          <h3>@seegak/3d</h3>
+          <p>WebGL2 기반 3D 시각화. 3D UMAP 산점도(아크볼 카메라, 2D↔3D 토글), 부피 렌더링(Ray Marching, MIP/X-Ray/ISO), 메시 렌더링(Phong 조명).</p>
+          <div class="mono">Scatter3DView &middot; VolumeView &middot; MeshView</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F517;</div>
+          <h3>@seegak/coordination</h3>
+          <p>멀티뷰 간 상태 동기화. 선택·줌·필터 등의 이벤트를 CoordinationSpace를 통해 뷰 간에 공유합니다.</p>
+          <div class="mono">CoordinationSpace &middot; ViewConfigBuilder</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">&#x1F504;</div>
+          <h3>@seegak/data-loaders</h3>
+          <p>Web Worker 기반 비동기 데이터 로더. AnnData/Zarr/Arrow/Parquet 포맷 파싱을 메인 스레드 차단 없이 수행.</p>
+          <div class="mono">LoaderWorker &middot; AnnDataLoader &middot; ZarrLoader</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 6: USAGE -->
+  <section class="slide" data-idx="6">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>사용법</h2>
+        <p>React 컴포넌트로 몇 줄이면 시작할 수 있습니다.</p>
+      </div>
+      <div class="code-section">
+        <div class="code-block">
+          <div class="code-block-header">
+            <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+            <span>BasicScatter.tsx</span>
+          </div>
+          <pre>
+<span class="kw">import</span> { <span class="fn">ScatterChart</span> } <span class="kw">from</span> <span class="str">'@seegak/react'</span>;
+
+<span class="kw">function</span> <span class="fn">MyVisualization</span>() {
+  <span class="kw">const</span> data = {
+    x: <span class="kw">new</span> <span class="type">Float32Array</span>([<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>, <span class="num">5</span>]),
+    y: <span class="kw">new</span> <span class="type">Float32Array</span>([<span class="num">2</span>, <span class="num">4</span>, <span class="num">1</span>, <span class="num">5</span>, <span class="num">3</span>]),
+    labels: [<span class="str">'A'</span>, <span class="str">'A'</span>, <span class="str">'B'</span>, <span class="str">'B'</span>, <span class="str">'A'</span>],
+    colors: [<span class="str">'#e41a1c'</span>, <span class="str">'#e41a1c'</span>,
+             <span class="str">'#377eb8'</span>, <span class="str">'#377eb8'</span>, <span class="str">'#e41a1c'</span>],
+  };
+
+  <span class="kw">return</span> (
+    &lt;<span class="tag">ScatterChart</span>
+      <span class="attr">data</span>={data}
+      <span class="attr">pointSize</span>={<span class="num">3</span>}
+      <span class="attr">opacity</span>={<span class="num">0.85</span>}
+      <span class="attr">tooltip</span> <span class="attr">toolbar</span> <span class="attr">legend</span> <span class="attr">autoFit</span>
+    /&gt;
+  );
+}</pre>
+        </div>
+        <div class="code-desc">
+          <h3>선언적 API</h3>
+          <p>React 컴포넌트에 데이터를 전달하기만 하면 됩니다. WebGL 초기화, 셰이더 컴파일, 버퍼 관리는 모두 자동입니다.</p>
+          <ul>
+            <li><strong>data</strong>: Float32Array x, y + 라벨/컬러</li>
+            <li><strong>tooltip</strong>: 호버 시 데이터 정보 표시</li>
+            <li><strong>toolbar</strong>: Pan, Box Select, Lasso 도구</li>
+            <li><strong>legend</strong>: 클러스터별 범례 (클릭으로 토글)</li>
+            <li><strong>autoFit</strong>: 데이터 범위에 맞게 자동 줌</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 7: FEATURES -->
+  <section class="slide slide-alt" data-idx="7">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>주요 기능</h2>
+        <p>시각화에 필요한 모든 것이 내장되어 있습니다.</p>
+      </div>
+      <div class="feature-grid">
+        <div class="feature-item">
+          <div class="f-icon">&#x1F3AF;</div>
+          <div><h4>Spatial Index Hit-Test</h4><p>그리드 기반 O(1) 최근접 포인트 탐색. 호버 시 &lt;1ms.</p></div>
+        </div>
+        <div class="feature-item">
+          <div class="f-icon">&#x1F50D;</div>
+          <div><h4>LOD (Level of Detail)</h4><p>줌 레벨에 따라 포인트 밀도 자동 조절. 6단계 LOD.</p></div>
+        </div>
+        <div class="feature-item">
+          <div class="f-icon">&#x2702;</div>
+          <div><h4>Box / Lasso Selection</h4><p>사각형 또는 자유형 라소 선택. 월드 좌표 기반.</p></div>
+        </div>
+        <div class="feature-item">
+          <div class="f-icon">&#x1F3A8;</div>
+          <div><h4>Color Scales</h4><p>VIRIDIS, PLASMA 등 지각적 균일 스케일. GPU 텍스처 기반.</p></div>
+        </div>
+        <div class="feature-item">
+          <div class="f-icon">&#x1F4F1;</div>
+          <div><h4>Touch Support</h4><p>핀치 줌, 터치 패닝. 모바일/태블릿 완벽 동작.</p></div>
+        </div>
+        <div class="feature-item">
+          <div class="f-icon">&#x1F4BE;</div>
+          <div><h4>Export</h4><p>PNG (스케일 팩터) 및 SVG 벡터. 논문용 고해상도.</p></div>
+        </div>
+        <div class="feature-item">
+          <div class="f-icon">&#x267F;</div>
+          <div><h4>Accessibility</h4><p>ARIA 레이블, 키보드 내비게이션, 라이브 리전 알림.</p></div>
+        </div>
+        <div class="feature-item">
+          <div class="f-icon">&#x1F4DD;</div>
+          <div><h4>Annotation Overlay</h4><p>펜, 라인, 지우개로 차트 위 주석. 월드 좌표 저장.</p></div>
+        </div>
+        <div class="feature-item">
+          <div class="f-icon">&#x1F300;</div>
+          <div><h4>Smooth Animation</h4><p>easeOutCubic, easeOutElastic 등 인터럽터블 트랜지션.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 8: PERFORMANCE -->
+  <section class="slide" data-idx="8">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>성능 비교</h2>
+        <p>동일 GTEx snRNAseq 데이터 100K 포인트 기준 (실측값)</p>
+      </div>
+      <div class="compare-wrapper">
+        <div class="compare-card seegak">
+          <div class="compare-header"><span>&#x26A1;</span> Seegak</div>
+          <div class="compare-body">
+            <div class="stat-row"><span>렌더링 시간</span><span class="val">~62.5ms</span></div>
+            <div class="stat-row"><span>GPU 메모리</span><span class="val">~1.2 MB</span></div>
+            <div class="stat-row"><span>색상 데이터</span><span class="val">256x1 팔레트 (1KB)</span></div>
+            <div class="stat-row"><span>React 오버헤드</span><span class="val">0 (명령형 우회)</span></div>
+          </div>
+        </div>
+        <div class="compare-card plotly">
+          <div class="compare-header"><span>&#x1F30D;</span> Plotly.js</div>
+          <div class="compare-body">
+            <div class="stat-row"><span>렌더링 시간</span><span class="val">~414.7ms</span></div>
+            <div class="stat-row"><span>GPU 메모리</span><span class="val">~6.4 MB</span></div>
+            <div class="stat-row"><span>색상 데이터</span><span class="val">Per-point string</span></div>
+            <div class="stat-row"><span>React 오버헤드</span><span class="val">Full re-layout</span></div>
+          </div>
+        </div>
+        <div class="compare-card vitessce">
+          <div class="compare-header"><span>&#x1F52C;</span> Vitessce</div>
+          <div class="compare-body">
+            <div class="stat-row"><span>렌더링 시간</span><span class="val">~677.6ms</span></div>
+            <div class="stat-row"><span>GPU 메모리</span><span class="val">~3.2 MB</span></div>
+            <div class="stat-row"><span>색상 데이터</span><span class="val">Per-point RGBA</span></div>
+            <div class="stat-row"><span>React 오버헤드</span><span class="val">Zustand store</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="perf-visual">
+        <div class="perf-row">
+          <div class="perf-label">100K Scatter</div>
+          <div class="perf-bars">
+            <div class="perf-bar-item"><div class="perf-bar-fill seegak" style="width: 9%; min-width: 150px;">Seegak 62.5ms</div></div>
+            <div class="perf-bar-item"><div class="perf-bar-fill plotly" style="width: 61%;">Plotly.js 414.7ms</div></div>
+            <div class="perf-bar-item"><div class="perf-bar-fill vitessce" style="width: 100%;">Vitessce 677.6ms</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 9: OPTIMIZATIONS -->
+  <section class="slide slide-alt" data-idx="9">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>핵심 최적화 기법</h2>
+        <p>Seegak이 빠른 이유</p>
+      </div>
+      <div class="opt-grid">
+        <div class="opt-card">
+          <div><span class="opt-badge gpu">GPU</span></div>
+          <h3>팔레트 텍스처</h3>
+          <p>100K 포인트의 RGBA 색상 버퍼(1.6MB) 대신, 256x1 팔레트 텍스처(1KB) + Uint16 인덱스 버퍼(200KB)로 GPU 업로드를 10배 감소. 색상 변경 시에도 팔레트만 업데이트.</p>
+        </div>
+        <div class="opt-card">
+          <div><span class="opt-badge cpu">CPU</span></div>
+          <h3>분리 버퍼 직접 업로드</h3>
+          <p>data.x, data.y를 별도의 GL 어트리뷰트로 직접 업로드. 100K 포인트의 CPU 인터리브 루프를 완전히 제거하여 O(N) &rarr; O(0) CPU 작업으로 단축.</p>
+        </div>
+        <div class="opt-card">
+          <div><span class="opt-badge react">React</span></div>
+          <h3>명령형 우회</h3>
+          <p>React의 비동기 상태 스케줄링을 우회하여 instance.update()로 즉시 GPU에 데이터를 전달. setState &rarr; useEffect &rarr; render 파이프라인의 오버헤드를 제거.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 10: PROTOCOL BENCHMARK OVERVIEW -->
+  <section class="slide" data-idx="10">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>데이터 전송 프로토콜 벤치마크</h2>
+        <p>동일한 scatter 데이터(209K 포인트)를 12가지 프로토콜로 전송 &mdash; 100회 반복 측정</p>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="bench-table">
+          <thead>
+            <tr>
+              <th>프로토콜</th>
+              <th>총 시간 (mean&plusmn;std)</th>
+              <th>전송</th>
+              <th>파싱</th>
+              <th>데이터 크기</th>
+              <th>처리량</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="proto-badge" style="background:#eab308;">{ }</span> REST JSON</td>
+              <td class="val-ms">2541.6&plusmn;97.4 ms</td>
+              <td class="val-ms">2506.2&plusmn;97.2</td>
+              <td class="val-ms">35.4&plusmn;1.0</td>
+              <td>10.85 MB</td>
+              <td>4.3 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#3b82f6;">01</span> REST Binary</td>
+              <td class="val-ms">1663.7&plusmn;102.7 ms</td>
+              <td class="val-ms">1663.7&plusmn;102.7</td>
+              <td class="val-ms">0.0&plusmn;0.0</td>
+              <td>3.63 MB</td>
+              <td>2.2 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#8b5cf6;">WS</span> WebSocket</td>
+              <td class="val-ms">1619.3&plusmn;83.5 ms</td>
+              <td class="val-ms">1619.2&plusmn;83.5</td>
+              <td class="val-ms">0.0&plusmn;0.0</td>
+              <td>2.09 MB</td>
+              <td>1.3 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#06b6d4;">gR</span> gRPC-Web</td>
+              <td class="val-ms">1571.4&plusmn;90.4 ms</td>
+              <td class="val-ms">1569.1&plusmn;90.4</td>
+              <td class="val-ms">2.3&plusmn;0.5</td>
+              <td>4.26 MB</td>
+              <td>2.7 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#ec4899;">MP</span> MessagePack</td>
+              <td class="val-ms">1603.0&plusmn;104.4 ms</td>
+              <td class="val-ms">1554.7&plusmn;104.7</td>
+              <td class="val-ms">48.3&plusmn;9.3</td>
+              <td>3.84 MB</td>
+              <td>2.4 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#10b981;">FB</span> FlatBuffers</td>
+              <td class="val-ms">1560.3&plusmn;101.7 ms</td>
+              <td class="val-ms">1560.3&plusmn;101.7</td>
+              <td class="val-ms">0.0&plusmn;0.0</td>
+              <td>2.09 MB</td>
+              <td>1.3 MB/s</td>
+            </tr>
+            <tr class="winner">
+              <td><span class="proto-badge" style="background:#ef4444;">&#x2192;</span> Arrow IPC</td>
+              <td class="val-ms val-best">1560.0&plusmn;86.8 ms</td>
+              <td class="val-ms val-best">1559.5&plusmn;86.8</td>
+              <td class="val-ms">0.5&plusmn;0.2</td>
+              <td>5.09 MB</td>
+              <td>3.3 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#f97316;">Zr</span> Zarr Chunked</td>
+              <td class="val-ms">1608.8&plusmn;83.8 ms</td>
+              <td class="val-ms">1593.9&plusmn;83.0</td>
+              <td class="val-ms">14.9&plusmn;1.2</td>
+              <td>1.70 MB</td>
+              <td>1.1 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#a855f7;">CB</span> CBOR</td>
+              <td class="val-ms">1593.3&plusmn;103.7 ms</td>
+              <td class="val-ms">1571.9&plusmn;104.1</td>
+              <td class="val-ms">21.4&plusmn;5.0</td>
+              <td>3.84 MB</td>
+              <td>2.4 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#14b8a6;">Pq</span> Parquet</td>
+              <td class="val-ms">1622.6&plusmn;89.5 ms</td>
+              <td class="val-ms">1610.3&plusmn;89.4</td>
+              <td class="val-ms">12.3&plusmn;0.5</td>
+              <td>2.82 MB</td>
+              <td>1.7 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#64748b;">Br</span> Brotli Binary</td>
+              <td class="val-ms">1670.1&plusmn;70.1 ms</td>
+              <td class="val-ms">1670.1&plusmn;70.1</td>
+              <td class="val-ms">0.0&plusmn;0.0</td>
+              <td>2.51 MB</td>
+              <td>1.5 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#f59e0b;">SS</span> SSE Streaming</td>
+              <td class="val-ms">1622.7&plusmn;127.0 ms</td>
+              <td class="val-ms">1525.3&plusmn;126.6</td>
+              <td class="val-ms">97.4&plusmn;2.1</td>
+              <td>3.35 MB</td>
+              <td>2.1 MB/s</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 11: BENCHMARK RANKING -->
+  <section class="slide slide-alt" data-idx="11">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>프로토콜 속도 순위</h2>
+        <p>209K 포인트 &middot; 100회 반복 &middot; 총 시간(전송+파싱) 기준</p>
+      </div>
+
+      <div class="rank-bars">
+        <div class="rank-row">
+          <div class="rank-label" style="color:var(--primary);font-weight:700;">Arrow IPC</div>
+          <div class="rank-bar" style="width:61.4%;background:#ef4444;">1560.0 ms</div>
+          <div class="rank-num">FASTEST</div>
+        </div>
+        <div class="rank-row">
+          <div class="rank-label">FlatBuffers</div>
+          <div class="rank-bar" style="width:61.4%;background:#10b981;">1560.3 ms</div>
+          <div class="rank-num">+0.3</div>
+        </div>
+        <div class="rank-row">
+          <div class="rank-label">gRPC-Web</div>
+          <div class="rank-bar" style="width:61.9%;background:#06b6d4;">1571.4 ms</div>
+          <div class="rank-num">+11.4</div>
+        </div>
+        <div class="rank-row">
+          <div class="rank-label">CBOR</div>
+          <div class="rank-bar" style="width:62.7%;background:#a855f7;">1593.3 ms</div>
+          <div class="rank-num">+33.3</div>
+        </div>
+        <div class="rank-row">
+          <div class="rank-label">MessagePack</div>
+          <div class="rank-bar" style="width:63.1%;background:#ec4899;">1603.0 ms</div>
+          <div class="rank-num">+43.0</div>
+        </div>
+        <div class="rank-row">
+          <div class="rank-label">Zarr Chunked</div>
+          <div class="rank-bar" style="width:63.3%;background:#f97316;">1608.8 ms</div>
+          <div class="rank-num">+48.8</div>
+        </div>
+        <div class="rank-row">
+          <div class="rank-label">WebSocket</div>
+          <div class="rank-bar" style="width:63.8%;background:#8b5cf6;">1619.3 ms</div>
+          <div class="rank-num">+59.3</div>
+        </div>
+        <div class="rank-row">
+          <div class="rank-label">Parquet</div>
+          <div class="rank-bar" style="width:63.9%;background:#14b8a6;">1622.6 ms</div>
+          <div class="rank-num">+62.6</div>
+        </div>
+        <div class="rank-row">
+          <div class="rank-label">SSE Streaming</div>
+          <div class="rank-bar" style="width:63.9%;background:#f59e0b;">1622.7 ms</div>
+          <div class="rank-num">+62.7</div>
+        </div>
+        <div class="rank-row">
+          <div class="rank-label">REST Binary</div>
+          <div class="rank-bar" style="width:65.5%;background:#3b82f6;">1663.7 ms</div>
+          <div class="rank-num">+103.7</div>
+        </div>
+        <div class="rank-row">
+          <div class="rank-label">Brotli Binary</div>
+          <div class="rank-bar" style="width:65.8%;background:#64748b;">1670.1 ms</div>
+          <div class="rank-num">+110.1</div>
+        </div>
+        <div class="rank-row">
+          <div class="rank-label" style="color:#94a3b8;">REST JSON</div>
+          <div class="rank-bar" style="width:100%;background:#eab308;">2541.6 ms</div>
+          <div class="rank-num" style="color:#ef4444;">+981.6</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 12: BENCHMARK INSIGHTS -->
+  <section class="slide" data-idx="12">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>벤치마크 분석</h2>
+        <p>12가지 프로토콜 실험에서 얻은 핵심 인사이트</p>
+      </div>
+
+      <div class="insight-grid">
+        <div class="insight-card">
+          <h4>&#x1F3C6; Zero-copy가 승리</h4>
+          <span class="highlight-num">0.0 ms parse</span>
+          <p>Arrow IPC, FlatBuffers, REST Binary 모두 파싱 시간이 0ms. TypedArray 뷰를 그대로 사용하는 zero-copy 방식이 직렬화/역직렬화 오버헤드를 완전히 제거합니다.</p>
+        </div>
+        <div class="insight-card">
+          <h4>&#x1F4E6; JSON은 확실한 병목</h4>
+          <span class="highlight-num">+63% 느림</span>
+          <p>REST JSON(2541ms)은 2위 대비 981ms 느림. 10.85MB 문자열 직렬화 + 35ms 파싱이 원인. 대규모 수치 데이터에서 JSON은 최악의 선택입니다.</p>
+        </div>
+        <div class="insight-card">
+          <h4>&#x1F4CA; 압축의 트레이드오프</h4>
+          <p>Zarr(1.70MB)가 가장 작지만 디컴프레스 비용(14.9ms)이 추가됨. Brotli(2.51MB)는 압축률이 좋지만 브라우저 해제 대기 시간이 존재. 로컬 환경에서는 <strong>비압축 바이너리가 유리</strong>합니다.</p>
+          <div style="margin-top:0.5rem;">
+            <span class="method-tag">Zarr 1.70MB</span>
+            <span class="method-tag">FlatBuf 2.09MB</span>
+            <span class="method-tag">Brotli 2.51MB</span>
+            <span class="method-tag">JSON 10.85MB</span>
+          </div>
+        </div>
+        <div class="insight-card">
+          <h4>&#x1F9EA; 실험 환경</h4>
+          <p>
+            <strong>데이터</strong>: 209,000 scatter 포인트 (x, y, cluster label, color)<br>
+            <strong>반복</strong>: 100회 측정, mean&plusmn;std 통계<br>
+            <strong>서버</strong>: FastAPI (Docker), Python 3.12<br>
+            <strong>클라이언트</strong>: Chrome, nginx (Docker)<br>
+            <strong>네트워크</strong>: localhost (Docker Compose)
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 13: NETWORK SIMULATION MOTIVATION -->
+  <section class="slide" data-idx="13">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>의문: 로컬 환경의 한계</h2>
+        <p>localhost 벤치마크가 놓치는 것</p>
+      </div>
+
+      <div class="insight-grid">
+        <div class="insight-card" style="border-left:3px solid #ef4444;">
+          <h4>&#x2753; 왜 모든 프로토콜이 비슷할까?</h4>
+          <span class="highlight-num">1560~1670 ms</span>
+          <p>로컬 환경(localhost)에서는 네트워크 레이턴시가 0ms, 대역폭이 무제한입니다. <strong>데이터 크기 차이가 전송 시간에 반영되지 않아</strong> 10.85MB JSON과 1.70MB Zarr의 전송 시간이 거의 동일하게 측정되었습니다.</p>
+        </div>
+        <div class="insight-card" style="border-left:3px solid #f59e0b;">
+          <h4>&#x1F30D; 실제 배포 환경은 다르다</h4>
+          <p>K-MAP 같은 실제 서비스에서는 서버가 원격에 있습니다. 네트워크 레이턴시(5~100ms)와 대역폭 제한(1.5~30Mbps)이 존재하며, <strong>데이터 크기가 곧 전송 시간</strong>이 됩니다.</p>
+        </div>
+        <div class="insight-card" style="border-left:3px solid #3b82f6;">
+          <h4>&#x1F6E0; Docker Proxy 시뮬레이션</h4>
+          <p>이 문제를 해결하기 위해 <strong>네트워크 시뮬레이션 프록시</strong>를 구축했습니다. Docker Compose에 역방향 프록시 컨테이너를 추가하여 RTT 레이턴시와 대역폭 제한을 적용합니다.</p>
+          <div style="margin-top:0.5rem;">
+            <span class="method-tag">Fast WiFi: 5ms, 30Mbps</span>
+            <span class="method-tag">4G: 30ms, 10Mbps</span>
+            <span class="method-tag">3G: 100ms, 1.5Mbps</span>
+          </div>
+        </div>
+        <div class="insight-card" style="border-left:3px solid #10b981;">
+          <h4>&#x1F4D0; 아키텍처</h4>
+          <p>
+            <strong>Browser</strong> &rarr; <strong>Proxy (aiohttp :5002)</strong> &rarr; <strong>Backend (FastAPI :5001)</strong><br>
+            프록시가 요청/응답에 지연을 추가하고, 응답 크기에 비례하여 대역폭 제한을 시뮬레이션합니다. HTTP, WebSocket, SSE 모두 지원합니다.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 14: NETWORK SIMULATION RESULTS -->
+  <section class="slide slide-alt" data-idx="14">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>네트워크 시뮬레이션 결과</h2>
+        <p>Fast WiFi (5ms RTT, 30Mbps) &middot; 100K 포인트 &middot; 100회 반복</p>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="bench-table">
+          <thead>
+            <tr>
+              <th>프로토콜</th>
+              <th>총 시간 (mean&plusmn;std)</th>
+              <th>전송</th>
+              <th>파싱</th>
+              <th>데이터 크기</th>
+              <th>처리량</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="proto-badge" style="background:#eab308;">{ }</span> REST JSON</td>
+              <td class="val-ms">2092.9&plusmn;23.8 ms</td>
+              <td class="val-ms">2076.2&plusmn;23.8</td>
+              <td class="val-ms">16.6&plusmn;0.7</td>
+              <td>5.19 MB</td>
+              <td>2.5 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#3b82f6;">01</span> REST Binary</td>
+              <td class="val-ms">617.1&plusmn;9.6 ms</td>
+              <td class="val-ms">617.1&plusmn;9.6</td>
+              <td class="val-ms">0.0&plusmn;0.0</td>
+              <td>1.74 MB</td>
+              <td>2.8 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#8b5cf6;">WS</span> WebSocket</td>
+              <td class="val-ms">364.2&plusmn;5.9 ms</td>
+              <td class="val-ms">364.2&plusmn;5.9</td>
+              <td class="val-ms">0.0&plusmn;0.1</td>
+              <td>1.00 MB</td>
+              <td>2.7 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#06b6d4;">gR</span> gRPC-Web</td>
+              <td class="val-ms">661.3&plusmn;10.9 ms</td>
+              <td class="val-ms">660.2&plusmn;10.9</td>
+              <td class="val-ms">1.1&plusmn;0.1</td>
+              <td>2.04 MB</td>
+              <td>3.1 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#ec4899;">MP</span> MessagePack</td>
+              <td class="val-ms">611.9&plusmn;9.6 ms</td>
+              <td class="val-ms">590.4&plusmn;9.5</td>
+              <td class="val-ms">21.5&plusmn;2.8</td>
+              <td>1.84 MB</td>
+              <td>3.0 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#10b981;">FB</span> FlatBuffers</td>
+              <td class="val-ms">341.6&plusmn;5.1 ms</td>
+              <td class="val-ms">341.6&plusmn;5.1</td>
+              <td class="val-ms">0.0&plusmn;0.0</td>
+              <td>1.00 MB</td>
+              <td>2.9 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#ef4444;">&#x2192;</span> Arrow IPC</td>
+              <td class="val-ms">773.0&plusmn;10.2 ms</td>
+              <td class="val-ms">772.5&plusmn;10.2</td>
+              <td class="val-ms">0.5&plusmn;0.1</td>
+              <td>2.44 MB</td>
+              <td>3.2 MB/s</td>
+            </tr>
+            <tr class="winner">
+              <td><span class="proto-badge" style="background:#f97316;">Zr</span> Zarr Chunked</td>
+              <td class="val-ms val-best">310.9&plusmn;4.5 ms</td>
+              <td class="val-ms val-best">302.8&plusmn;4.2</td>
+              <td class="val-ms">8.0&plusmn;1.1</td>
+              <td>766.6 KB</td>
+              <td>2.5 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#a855f7;">CB</span> CBOR</td>
+              <td class="val-ms">612.9&plusmn;8.6 ms</td>
+              <td class="val-ms">605.0&plusmn;8.6</td>
+              <td class="val-ms">7.9&plusmn;1.0</td>
+              <td>1.84 MB</td>
+              <td>3.0 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#14b8a6;">Pq</span> Parquet</td>
+              <td class="val-ms">462.8&plusmn;6.6 ms</td>
+              <td class="val-ms">456.7&plusmn;6.6</td>
+              <td class="val-ms">6.1&plusmn;0.2</td>
+              <td>1.32 MB</td>
+              <td>2.9 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#64748b;">Br</span> Brotli Binary</td>
+              <td class="val-ms">339.6&plusmn;5.7 ms</td>
+              <td class="val-ms">339.6&plusmn;5.7</td>
+              <td class="val-ms">0.0&plusmn;0.0</td>
+              <td>1.20 MB</td>
+              <td>3.5 MB/s</td>
+            </tr>
+            <tr>
+              <td><span class="proto-badge" style="background:#f59e0b;">SS</span> SSE Streaming</td>
+              <td class="val-ms">554.0&plusmn;8.6 ms</td>
+              <td class="val-ms">96.5&plusmn;14.4</td>
+              <td class="val-ms">457.5&plusmn;15.9</td>
+              <td>1.61 MB</td>
+              <td>2.9 MB/s</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 15: NETWORK SIMULATION RANKING & INSIGHTS -->
+  <section class="slide" data-idx="15">
+    <div class="slide-inner">
+      <div class="section-header">
+        <h2>네트워크 환경에서의 결론</h2>
+        <p>Fast WiFi 시뮬레이션 &mdash; 로컬 vs 실제 네트워크에서 프로토콜 선택이 달라진다</p>
+      </div>
+
+      <div class="insight-grid">
+        <div class="insight-card" style="border-left:3px solid #f97316;">
+          <h4>&#x1F3C6; 압축이 핵심이다</h4>
+          <span class="highlight-num">Zarr 310.9 ms</span>
+          <p>로컬에서 중간이던 Zarr Chunked(766KB)가 네트워크 환경에서 <strong>1위</strong>로 등극. 가장 작은 데이터 크기가 대역폭 제한 환경에서 결정적 우위를 가집니다. 로컬 대비 <strong>5.2배 빠름</strong>.</p>
+        </div>
+        <div class="insight-card" style="border-left:3px solid #ef4444;">
+          <h4>&#x274C; Arrow IPC의 반전</h4>
+          <span class="highlight-num">1위 &rarr; 7위</span>
+          <p>로컬에서 1위(1560ms)였던 Arrow IPC가 네트워크에서 773ms로 7위로 하락. 2.44MB의 비압축 데이터가 대역폭 제한에서 불리하게 작용합니다.</p>
+        </div>
+        <div class="insight-card" style="border-left:3px solid #10b981;">
+          <h4>&#x1F4A1; 데이터 크기 = 전송 시간</h4>
+          <p>네트워크 환경에서는 <strong>데이터 크기와 전송 시간이 거의 비례</strong>합니다. 압축 프로토콜(Zarr, Brotli, Parquet)이 상위권을 차지하고, 대용량 비압축(JSON, Arrow)이 하위권으로 밀립니다.</p>
+          <div style="margin-top:0.5rem;">
+            <span class="method-tag" style="background:#f97316;color:#fff;">Zarr 766KB &rarr; 1위</span>
+            <span class="method-tag" style="background:#10b981;color:#fff;">FlatBuf 1.0MB &rarr; 2위</span>
+            <span class="method-tag" style="background:#64748b;color:#fff;">Brotli 1.2MB &rarr; 3위</span>
+          </div>
+        </div>
+        <div class="insight-card" style="border-left:3px solid var(--primary);">
+          <h4>&#x1F4CB; 결론: 환경에 따라 최적 프로토콜이 다르다</h4>
+          <p>
+            <strong>로컬/내부망</strong>: zero-copy (Arrow IPC, FlatBuffers) &mdash; 파싱 비용 최소화<br>
+            <strong>원격/공용망</strong>: 압축 (Zarr, Brotli, Parquet) &mdash; 전송 크기 최소화<br>
+            <strong>범용</strong>: FlatBuffers &mdash; 작은 크기 + zero-copy로 양쪽에서 모두 상위권
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 16: FOOTER / ABOUT -->
+  <section class="slide footer-slide" data-idx="16">
+    <div class="slide-inner">
+      <div class="footer-content">
+        <div class="footer-logo">
+          <div class="logo-sq">S</div>
+          Seegak
+        </div>
+        <p>
+          대규모 생물학 데이터의 고성능 인터랙티브 시각화를 위한
+          WebGL2 기반 오픈소스 라이브러리.<br>
+          CISLAB에서 개발 및 유지보수합니다.
+        </p>
+        <div class="footer-tags">
+          <span class="footer-tag">WebGL2</span>
+          <span class="footer-tag">TypeScript</span>
+          <span class="footer-tag">React 18</span>
+          <span class="footer-tag">Web Workers</span>
+        </div>
+        <div class="footer-bottom-text">
+          &copy; 2025 Seegak &middot; CISLAB. All rights reserved.
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============================================================
+     Tab-based slide navigation
+     ============================================================ -->
+<script>
+(function() {
+  const TOTAL = 17;
+  const slides = document.querySelectorAll('.slide');
+  const navLinks = document.querySelectorAll('.header-nav a');
+  const pageBadge = document.getElementById('pageBadge');
+  const keyHint = document.getElementById('keyHint');
+  let current = 0;
+  let animating = false;
+
+  function goSlide(idx) {
+    if (idx < 0 || idx >= TOTAL || idx === current || animating) return;
+    animating = true;
+
+    const prev = slides[current];
+    const next = slides[idx];
+    const goingForward = idx > current;
+
+    // Set initial position of incoming slide
+    next.style.transition = 'none';
+    next.style.transform = goingForward ? 'translateX(60px)' : 'translateX(-60px)';
+    next.style.opacity = '0';
+
+    // Force reflow
+    void next.offsetWidth;
+
+    // Animate out current
+    prev.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+    prev.style.transform = goingForward ? 'translateX(-60px)' : 'translateX(60px)';
+    prev.style.opacity = '0';
+    prev.classList.remove('active');
+
+    // Animate in next
+    next.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+    next.style.transform = 'translateX(0)';
+    next.style.opacity = '1';
+    next.classList.add('active');
+
+    // Update nav
+    navLinks.forEach((l, i) => l.classList.toggle('active', i === idx));
+    pageBadge.textContent = (idx + 1) + ' / ' + TOTAL;
+
+    current = idx;
+
+    setTimeout(() => {
+      prev.style.pointerEvents = 'none';
+      next.style.pointerEvents = 'auto';
+      animating = false;
+    }, 420);
+  }
+
+  // Make goSlide global for logo click
+  window.goSlide = goSlide;
+
+  // Nav link clicks
+  navLinks.forEach(a => {
+    a.addEventListener('click', () => {
+      const idx = parseInt(a.dataset.slide, 10);
+      goSlide(idx);
+    });
+  });
+
+  // Keyboard
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+      e.preventDefault();
+      goSlide(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+      e.preventDefault();
+      goSlide(current - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goSlide(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goSlide(TOTAL - 1);
+    }
+  });
+
+  // Mouse wheel (with debounce to prevent rapid switching)
+  let wheelTimeout = null;
+  document.addEventListener('wheel', (e) => {
+    if (wheelTimeout) return;
+    e.preventDefault();
+    if (e.deltaY > 30) {
+      goSlide(current + 1);
+    } else if (e.deltaY < -30) {
+      goSlide(current - 1);
+    }
+    wheelTimeout = setTimeout(() => { wheelTimeout = null; }, 600);
+  }, { passive: false });
+
+  // Init: first slide active, first nav active
+  navLinks[0].classList.add('active');
+  pageBadge.textContent = '1 / ' + TOTAL;
+
+  // Hide key hint after 5s
+  setTimeout(() => { keyHint.style.opacity = '0'; }, 5000);
+})();
+</script>
+
+</body>
+</html>

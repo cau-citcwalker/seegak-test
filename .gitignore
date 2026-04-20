@@ -1,0 +1,42 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Paper
+paper/
+
+# Large binary datasets — not tracked in git
+benchmark-server/h5ad/*.h5ad
+benchmark-server/h5ad/*.csc.h5
+benchmark-server/viz_cache/
+benchmark-server/viz_scatter.db
+benchmark-server/benchmark.db
+benchmark-server/__pycache__/
+
+# Python venv
+.venv/
+*.pyc
+
+# Local dev tool settings (user-specific)
+.claude/settings.local.json

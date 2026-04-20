@@ -1,0 +1,49 @@
+{
+  "name": "seegak-test",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@msgpack/msgpack": "^3.1.3",
+    "@seegak/3d": "file:../seegak/packages/3d",
+    "@seegak/analysis": "file:../seegak/packages/analysis",
+    "@seegak/bio-charts": "file:../seegak/packages/bio-charts",
+    "@seegak/coordination": "file:../seegak/packages/coordination",
+    "@seegak/core": "file:../seegak/packages/core",
+    "@seegak/data-loaders": "file:../seegak/packages/data-loaders",
+    "@seegak/genomics": "file:../seegak/packages/genomics",
+    "@seegak/human-body-map": "file:../seegak/packages/human-body-map",
+    "@seegak/react": "file:../seegak/packages/react",
+    "@seegak/spatial": "file:../seegak/packages/spatial",
+    "@types/plotly.js": "^3.0.10",
+    "apache-arrow": "^21.1.0",
+    "cbor-x": "^1.6.4",
+    "flatbuffers": "^25.9.23",
+    "fzstd": "^0.1.1",
+    "parquet-wasm": "^0.7.1",
+    "plotly.js-dist-min": "^3.4.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vitessce": "^3.9.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.48.0",
+    "vite": "^7.3.1"
+  }
+}
