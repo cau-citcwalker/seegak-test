@@ -11,7 +11,6 @@ import {
   ViolinPlotChart,
 } from '@seegak/react';
 import type { ColorScale, ScatterSelectEvent, ScatterData } from '@seegak/react';
-import type { BodyMapEvent } from '@seegak/human-body-map';
 import { initGenomicsDemo } from './demo-genomics';
 import { init3DDemo } from './demo-3d';
 import { initGatingDemo } from './demo-gating';
@@ -81,7 +80,7 @@ type DemoTab = 'main' | 'genomics' | '3d' | 'gating';
 function App() {
   const [activeTab, setActiveTab]           = useState<DemoTab>('main');
   const [selectedGene, setSelectedGene]     = useState<string>('SFTPC');
-  const [selectedOrgan, setSelectedOrgan]   = useState<string | null>(null);
+  const [selectedOrgans, setSelectedOrgans] = useState<string[]>([]);
   const [selectedSystem, setSelectedSystem] = useState<string | null>(null);
   const [selectedCells, setSelectedCells]   = useState<{ indices: number[]; type: string } | null>(null);
 
@@ -179,8 +178,8 @@ function App() {
   const featureData = generateFeaturePlotData(selectedGene);
   const boxData     = generateBoxPlotData(selectedGene);
 
-  const handleOrganClick = useCallback((e: BodyMapEvent) => {
-    setSelectedOrgan(prev => (prev === e.organId ? null : e.organId));
+  const handleSelectionChange = useCallback((ids: string[]) => {
+    setSelectedOrgans(ids);
   }, []);
 
   const handleSelectPoints = useCallback((e: ScatterSelectEvent) => {
@@ -460,7 +459,7 @@ function App() {
               return (
                 <button
                   key={sys}
-                  onClick={() => { setSelectedSystem(active ? null : sys); setSelectedOrgan(null); }}
+                  onClick={() => { setSelectedSystem(active ? null : sys); setSelectedOrgans([]); }}
                   style={{
                     padding: '6px 14px',
                     borderRadius: 999,
@@ -489,25 +488,39 @@ function App() {
             <ChartBox>
               <HumanBodyMap
                 data={bodyMapData}
-                onOrganClick={handleOrganClick}
+                onSelectionChange={handleSelectionChange}
                 systemFilter={selectedSystem}
               />
             </ChartBox>
-            <div style={{ ...chartCard, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 32 }}>
-              {selectedOrgan && bodyMapData[selectedOrgan] ? (
+            <div style={{ ...chartCard, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 32, overflow: 'auto' }}>
+              {selectedOrgans.length > 0 ? (
                 <>
-                  <h3 style={{ fontSize: 22, margin: '0 0 24px', textTransform: 'capitalize', color: '#f0f4ff' }}>
-                    {selectedOrgan}
-                  </h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-                    <StatCard label="Datasets" value={bodyMapData[selectedOrgan]!.datasetCount} />
-                    <StatCard label="Cells" value={bodyMapData[selectedOrgan]!.cellCount.toLocaleString()} />
-                    <StatCard label="Samples" value={bodyMapData[selectedOrgan]!.sampleCount} />
+                  <div style={{ fontSize: 11, color: '#5a6a7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                    Selected ({selectedOrgans.length})
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {selectedOrgans.map(id => {
+                      const d = bodyMapData[id];
+                      return (
+                        <div key={id} style={{ background: '#0d1420', borderRadius: 8, padding: '12px 16px' }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#e0e8f4', textTransform: 'capitalize', marginBottom: 8 }}>{id.replace(/_/g, ' ')}</div>
+                          {d ? (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                              <StatCard label="Datasets" value={d.datasetCount} />
+                              <StatCard label="Cells" value={d.cellCount.toLocaleString()} />
+                              <StatCard label="Samples" value={d.sampleCount} />
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12, color: '#4a5a6a' }}>No data</div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               ) : (
                 <p style={{ color: '#4a5a6a', fontSize: 16, textAlign: 'center' }}>
-                  Select an organ to view dataset information
+                  Select organs to view dataset information
                 </p>
               )}
             </div>
