@@ -5,8 +5,27 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    fs: {
+      allow: [
+        path.resolve(__dirname, '..'),
+      ],
+    },
+  },
   optimizeDeps: {
-    exclude: ['parquet-wasm'],
+    exclude: [
+      'parquet-wasm',
+      '@seegak/react',
+      '@seegak/core',
+      '@seegak/bio-charts',
+      '@seegak/human-body-map',
+      '@seegak/genomics',
+      '@seegak/spatial',
+      '@seegak/analysis',
+      '@seegak/3d',
+      '@seegak/coordination',
+      '@seegak/data-loaders',
+    ],
   },
   resolve: {
     dedupe: ['react', 'react-dom'],
