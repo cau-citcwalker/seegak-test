@@ -1,0 +1,14 @@
+{
+  "lung_right":      { "xAxis": "X_umap_1", "yAxis": "X_umap_2", "colorBy": "cell_type",        "label": "Lung — cell type UMAP" },
+  "lung_left":       { "xAxis": "X_umap_1", "yAxis": "X_umap_2", "colorBy": "cell_type",        "label": "Lung — cell type UMAP" },
+  "heart":           { "xAxis": "X_pca_1",  "yAxis": "X_pca_2",  "colorBy": "leiden_cluster",   "label": "Heart — cardiac cluster PCA" },
+  "brain":           { "xAxis": "X_tsne_1", "yAxis": "X_tsne_2", "colorBy": "brain_region",     "label": "Brain — region tSNE" },
+  "kidney_right":    { "xAxis": "X_umap_1", "yAxis": "X_umap_2", "colorBy": "nephron_segment",  "label": "Kidney — nephron segment UMAP" },
+  "kidney_left":     { "xAxis": "X_umap_1", "yAxis": "X_umap_2", "colorBy": "nephron_segment",  "label": "Kidney — nephron segment UMAP" },
+  "liver":           { "xAxis": "X_umap_1", "yAxis": "X_umap_2", "colorBy": "cell_type",        "label": "Liver — cell type UMAP" },
+  "stomach":         { "xAxis": "X_umap_1", "yAxis": "X_umap_2", "colorBy": "epithelial_subtype","label": "Stomach — epithelial subtype UMAP" },
+  "small_intestine": { "xAxis": "X_umap_1", "yAxis": "X_umap_2", "colorBy": "villus_zone",      "label": "Small intestine — villus zone UMAP" },
+  "large_intestine": { "xAxis": "X_umap_1", "yAxis": "X_umap_2", "colorBy": "cell_type",        "label": "Large intestine — cell type UMAP" },
+  "pancreas":        { "xAxis": "X_umap_1", "yAxis": "X_umap_2", "colorBy": "islet_cell_type",  "label": "Pancreas — islet cell type UMAP" },
+  "spleen":          { "xAxis": "X_umap_1", "yAxis": "X_umap_2", "colorBy": "immune_cell_type", "label": "Spleen — immune cell type UMAP" }
+}

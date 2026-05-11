@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
+import { useOrganAxisConfig } from './hooks/useOrganAxisConfig';
 import {
   ScatterChart,
   FeaturePlotChart,
@@ -81,6 +82,7 @@ function App() {
   const [activeTab, setActiveTab]           = useState<DemoTab>('main');
   const [selectedGene, setSelectedGene]     = useState<string>('SFTPC');
   const [selectedOrgans, setSelectedOrgans] = useState<string[]>([]);
+  const axisConfig = useOrganAxisConfig(selectedOrgans);
   const [selectedSystem, setSelectedSystem] = useState<string | null>(null);
   const [selectedCells, setSelectedCells]   = useState<{ indices: number[]; type: string } | null>(null);
 
@@ -492,37 +494,68 @@ function App() {
                 systemFilter={selectedSystem}
               />
             </ChartBox>
-            <div style={{ ...chartCard, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 32, overflow: 'auto' }}>
-              {selectedOrgans.length > 0 ? (
-                <>
-                  <div style={{ fontSize: 11, color: '#5a6a7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
-                    Selected ({selectedOrgans.length})
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {selectedOrgans.map(id => {
-                      const d = bodyMapData[id];
-                      return (
-                        <div key={id} style={{ background: '#0d1420', borderRadius: 8, padding: '12px 16px' }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: '#e0e8f4', textTransform: 'capitalize', marginBottom: 8 }}>{id.replace(/_/g, ' ')}</div>
-                          {d ? (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-                              <StatCard label="Datasets" value={d.datasetCount} />
-                              <StatCard label="Cells" value={d.cellCount.toLocaleString()} />
-                              <StatCard label="Samples" value={d.sampleCount} />
-                            </div>
-                          ) : (
-                            <div style={{ fontSize: 12, color: '#4a5a6a' }}>No data</div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              ) : (
-                <p style={{ color: '#4a5a6a', fontSize: 16, textAlign: 'center' }}>
-                  Select organs to view dataset information
-                </p>
-              )}
+            <div style={{ ...chartCard, display: 'flex', flexDirection: 'column', gap: 16, padding: 24, overflow: 'auto' }}>
+              {/* Organ stats */}
+              <div style={{ flex: 1 }}>
+                {selectedOrgans.length > 0 ? (
+                  <>
+                    <div style={{ fontSize: 11, color: '#5a6a7a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+                      Selected ({selectedOrgans.length})
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      {selectedOrgans.map(id => {
+                        const d = bodyMapData[id];
+                        return (
+                          <div key={id} style={{ background: '#0d1420', borderRadius: 8, padding: '12px 16px' }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: '#e0e8f4', textTransform: 'capitalize', marginBottom: 8 }}>{id.replace(/_/g, ' ')}</div>
+                            {d ? (
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                                <StatCard label="Datasets" value={d.datasetCount} />
+                                <StatCard label="Cells" value={d.cellCount.toLocaleString()} />
+                                <StatCard label="Samples" value={d.sampleCount} />
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: 12, color: '#4a5a6a' }}>No data</div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <p style={{ color: '#4a5a6a', fontSize: 16, textAlign: 'center', margin: 0 }}>
+                    Select organs to view dataset information
+                  </p>
+                )}
+              </div>
+
+              {/* Active axis config — updates automatically when organs are selected */}
+              <div style={{ background: '#0d1420', borderRadius: 10, padding: '14px 16px', borderLeft: '3px solid #3b82f6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <div style={{ fontSize: 11, color: '#5a6a7a', textTransform: 'uppercase', letterSpacing: 1 }}>Active Chart Axes</div>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 99,
+                    background: axisConfig.resolution === 'default' ? '#1e2a3a' : axisConfig.resolution === 'organ' ? '#14532d' : '#78350f',
+                    color: axisConfig.resolution === 'default' ? '#6a8aaa' : axisConfig.resolution === 'organ' ? '#86efac' : '#fcd34d',
+                    textTransform: 'uppercase', letterSpacing: 0.5,
+                  }}>
+                    {axisConfig.resolution}
+                  </span>
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#c0d4f0', marginBottom: 8 }}>{axisConfig.label}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+                  {[
+                    { k: 'X Axis', v: axisConfig.xAxis },
+                    { k: 'Y Axis', v: axisConfig.yAxis },
+                    { k: 'Color By', v: axisConfig.colorBy },
+                  ].map(({ k, v }) => (
+                    <div key={k} style={{ background: '#111827', borderRadius: 6, padding: '8px 10px' }}>
+                      <div style={{ fontSize: 10, color: '#4a6a8a', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{k}</div>
+                      <div style={{ fontSize: 12, fontFamily: 'monospace', color: '#60a5fa' }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
