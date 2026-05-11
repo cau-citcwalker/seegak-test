@@ -59,16 +59,63 @@ def _find_matrix(h5: h5py.File):
     return None
 
 
+def _decode_strs(arr) -> list[str]:
+    return [v.decode() if isinstance(v, bytes) else str(v) for v in arr]
+
+
+def _read_obs_var_column(group: h5py.Group, key: str) -> list[str]:
+    """Read a column, transparently decoding AnnData categorical encoding.
+
+    AnnData stores categorical columns as integer codes in `<col>` plus the
+    string categories in `__categories/<col>`. Reading the raw column gives
+    numbers; we need to follow the codes through __categories.
+    """
+    raw = group[key][:]
+    # If categories exist for this column, treat values as codes
+    cats_group = group.get("__categories")
+    if cats_group is not None and key in cats_group:
+        cats = _decode_strs(cats_group[key][:])
+        return [cats[c] if 0 <= int(c) < len(cats) else "" for c in raw]
+    return _decode_strs(raw)
+
+
+def _looks_symbolic(names: list[str]) -> bool:
+    """Heuristic: real gene symbols are mostly alphabetic, not pure digits or Ensembl IDs."""
+    sample = names[:100] if len(names) > 100 else names
+    if not sample:
+        return False
+    good = sum(
+        1 for n in sample
+        if n and any(c.isalpha() for c in n) and not n.startswith("ENS") and not n.isdigit()
+    )
+    return good >= len(sample) * 0.5
+
+
 def _find_gene_names(h5: h5py.File) -> list[str]:
+    """Find the most human-readable gene name column available.
+
+    Preference order: symbol-like columns first, with categorical decoding,
+    falling back to the AnnData _index (which may be Ensembl IDs).
+    """
     var = h5["var"]
     index_key = var.attrs.get("_index", "_index")
     if isinstance(index_key, bytes):
         index_key = index_key.decode()
-    for key in ["gene_name", "feature_name", "Approved symbol", index_key]:
+
+    # Try symbol-bearing columns; accept the first one that yields real symbols
+    for key in ["gene_name", "feature_name", "Approved symbol", "gene_symbol", "symbol"]:
         if key in var:
-            raw = var[key][:]
-            return [v.decode() if isinstance(v, bytes) else str(v) for v in raw]
-    raise RuntimeError("No gene name column found in var")
+            names = _read_obs_var_column(var, key)
+            if _looks_symbolic(names):
+                return names
+
+    # Fall back to _index (AnnData's canonical identifier — symbol or Ensembl ID)
+    if index_key in var:
+        names = _read_obs_var_column(var, index_key)
+        if names:
+            return names
+
+    raise RuntimeError("No usable gene name column found in var")
 
 
 def _find_labels(h5: h5py.File) -> list[str]:
