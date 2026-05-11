@@ -6,8 +6,10 @@
  * Falls back to inline synthetic data when server is unreachable.
  */
 
-import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { Vitessce } from 'vitessce';
+import { useEffect, useRef, useState, useCallback, useMemo, lazy, Suspense } from 'react';
+// vitessce is optional — only loaded if installed
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Vitessce = lazy(() => import('vitessce').then(m => ({ default: m.Vitessce as any })).catch(() => ({ default: () => null })));
 import { ScatterChart } from '@seegak/react';
 import type { ScatterChartHandle } from '@seegak/react';
 
@@ -777,13 +779,15 @@ function VitesscePanel({ data, onTiming }: {
   if (!vcConfig) return null;
 
   return (
-    <Vitessce
-      key={runKey}
-      config={vcConfig}
-      theme="dark"
-      height={380}
-      onConfigChange={handleConfigChange}
-    />
+    <Suspense fallback={null}>
+      <Vitessce
+        key={runKey}
+        config={vcConfig}
+        theme="dark"
+        height={380}
+        onConfigChange={handleConfigChange}
+      />
+    </Suspense>
   );
 }
 

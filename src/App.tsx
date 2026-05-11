@@ -491,10 +491,6 @@ function App() {
                 data={bodyMapData}
                 onOrganClick={handleOrganClick}
                 systemFilter={selectedSystem}
-                showLabels
-                defaultColor="#1a2a3a"
-                hoverColor="#2a4a6a"
-                activeColor="#3b82f6"
               />
             </ChartBox>
             <div style={{ ...chartCard, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: 32 }}>
